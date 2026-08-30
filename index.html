@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Smart AgroMix - ระบบบันทึกและจัดการสวนผสมผสาน</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sage: {
+                            50: '#f4f7f4',
+                            100: '#e3ebe3',
+                            500: '#4a7c59',
+                            600: '#3b6346',
+                            700: '#2c4a35',
+                        },
+                        earth: {
+                            100: '#f5efe6',
+                            500: '#8c6d46',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Sukhumvit Set', 'Prompt', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 1rem); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 1rem); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans antialiased selection:bg-sage-500 selection:text-white">
+
+    <div class="flex h-screen overflow-hidden max-w-7xl mx-auto bg-gray-50 shadow-2xl relative">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 justify-between">
+            <div>
+                <div class="p-6 flex items-center space-x-3 border-b border-gray-100">
+                    <div class="w-10 h-10 rounded-2xl bg-sage-500 flex items-center justify-center text-white shadow-lg shadow-sage-500/30">
+                        <i data-lucide="sprout" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg text-gray-900 leading-tight">Smart AgroMix</h1>
+                        <p class="text-xs text-sage-600 font-medium">จัดการสวนผสมผสาน</p>
+                    </div>
+                </div>
+
+                <nav class="p-4 space-y-1">
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 bg-sage-500 text-white shadow-md shadow-sage-500/20">
+                        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                        <span>ภาพรวม & พยากรณ์</span>
+                    </button>
+                    <button onclick="switchTab('crops')" id="nav-crops" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm text-gray-600 hover:bg-gray-100 transition-all duration-200">
+                        <i data-lucide="trees" class="w-5 h-5"></i>
+                        <span>จัดการชนิดพืชตามสวน</span>
+                    </button>
+                    <button onclick="switchTab('irrigation')" id="nav-irrigation" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm text-gray-600 hover:bg-gray-100 transition-all duration-200">
+                        <i data-lucide="droplets" class="w-5 h-5"></i>
+                        <span>การให้น้ำอัตโนมัติ & มือ</span>
+                    </button>
+                    <button onclick="switchTab('fertilizer')" id="nav-fertilizer" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm text-gray-600 hover:bg-gray-100 transition-all duration-200">
+                        <i data-lucide="flask-conical" class="w-5 h-5"></i>
+                        <span>ปุ๋ย & ฮอร์โมน</span>
+                    </button>
+                    <button onclick="switchTab('pest')" id="nav-pest" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm text-gray-600 hover:bg-gray-100 transition-all duration-200">
+                        <i data-lucide="shield-check" class="w-5 h-5"></i>
+                        <span>ป้องกันศัตรูพืช</span>
+                    </button>
+                    <button onclick="switchTab('knowledge')" id="nav-knowledge" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm text-gray-600 hover:bg-gray-100 transition-all duration-200">
+                        <i data-lucide="book-open-check" class="w-5 h-5"></i>
+                        <span>องค์ความรู้</span>
+                    </button>
+                </nav>
+            </div>
+
+            <div class="p-4 border-t border-gray-100">
+                <div class="bg-sage-50 rounded-xl p-3 flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-sage-500/10 text-sage-600 flex items-center justify-center">
+                        <i data-lucide="user" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-gray-900">เจ้าของสวน (เกษตรกร)</p>
+                        <p class="text-[10px] text-gray-500">สวนนครนายก & กาญจนบุรี</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col h-full overflow-hidden">
+            
+            <!-- Mobile Top Header Bar -->
+            <header class="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between pt-safe">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-xl bg-sage-500 flex items-center justify-center text-white">
+                        <i data-lucide="sprout" class="w-5 h-5"></i>
+                    </div>
+                    <span class="font-bold text-gray-900">Smart AgroMix</span>
+                </div>
+            </header>
+
+            <!-- Scrollable Page Container -->
+            <div id="content-area" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 pb-24 md:pb-8">
+                
+                <!-- TAB 1: DASHBOARD & WEATHER -->
+                <section id="tab-dashboard" class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div class="inline-flex items-center space-x-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+                            <i data-lucide="cloud-sun" class="w-4 h-4 text-blue-500"></i>
+                            <span>พยากรณ์อากาศ อัพเดตล่าสุด: <span id="current-date-str">วันนี้</span></span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-700 to-teal-800 text-white p-5 shadow-lg border border-emerald-600/30">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <span class="bg-white/20 backdrop-blur-md text-emerald-100 text-[11px] px-2.5 py-0.5 rounded-full font-medium">ภาคตะวันออก</span>
+                                    <h3 class="text-lg font-bold mt-1">อ.บ้านนา จ.นครนายก</h3>
+                                    <p class="text-xs text-emerald-100 mt-0.5">สวนนครนายก</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center text-amber-300">
+                                    <i data-lucide="sun-cloud-rain" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 mt-4 bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10 text-center">
+                                <div>
+                                    <p class="text-[10px] text-emerald-200">อุณหภูมิ</p>
+                                    <p class="text-lg font-bold mt-0.5">33°C</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-emerald-200">โอกาสเกิดฝน</p>
+                                    <p class="text-lg font-bold text-amber-300 mt-0.5">70%</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-emerald-200">ความชื้น</p>
+                                    <p class="text-lg font-bold mt-0.5">82%</p>
+                                </div>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-white/15 text-xs text-emerald-100 flex items-center space-x-2">
+                                <i data-lucide="sparkles" class="w-4 h-4 text-amber-300 flex-shrink-0"></i>
+                                <span>มีฝนฟ้าคะนองช่วงบ่ายถึงค่ำ งดการให้น้ำในแปลง</span>
+                            </div>
+                        </div>
+
+                        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 to-indigo-800 text-white p-5 shadow-lg border border-blue-600/30">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <span class="bg-white/20 backdrop-blur-md text-blue-100 text-[11px] px-2.5 py-0.5 rounded-full font-medium">ภาคกลาง</span>
+                                    <h3 class="text-lg font-bold mt-1">อ.ท่าม่วง จ.กาญจนบุรี</h3>
+                                    <p class="text-xs text-blue-100 mt-0.5">สวนกาญจนบุรี</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center text-amber-300">
+                                    <i data-lucide="cloud-sun" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 mt-4 bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10 text-center">
+                                <div>
+                                    <p class="text-[10px] text-blue-200">อุณหภูมิ</p>
+                                    <p class="text-lg font-bold mt-0.5">35°C</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-blue-200">โอกาสเกิดฝน</p>
+                                    <p class="text-lg font-bold text-amber-300 mt-0.5">40%</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-blue-200">ความชื้น</p>
+                                    <p class="text-lg font-bold mt-0.5">65%</p>
+                                </div>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-white/15 text-xs text-blue-100 flex items-center space-x-2">
+                                <i data-lucide="droplet" class="w-4 h-4 text-amber-300 flex-shrink-0"></i>
+                                <span>อากาศร้อนจัด ควรให้น้ำปกติช่วงเช้าตรู่</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                    <i data-lucide="radar" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900 text-sm md:text-base">เรดาร์ตรวจจับกลุ่มฝนเคลื่อนไหว</h3>
+                                    <p class="text-xs text-gray-500">สถานีเรดาร์หนองแขม (ภาพเคลื่อนไหวสด)</p>
+                                </div>
+                            </div>
+                            <a href="https://weather.bangkok.go.th/Radar/RadarAnimationNk.aspx" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1 bg-indigo-50 px-3 py-1.5 rounded-xl transition">
+                                <span>เปิดหน้าต่างใหม่</span>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            </a>
+                        </div>
+                        <div class="relative w-full h-[380px] md:h-[480px] bg-slate-900 rounded-2xl overflow-hidden border border-gray-200">
+                            <iframe src="https://weather.bangkok.go.th/Radar/RadarAnimationNk.aspx" class="w-full h-full border-0" title="ภาพเคลื่อนไหวเรดาร์หนองแขม" loading="lazy"></iframe>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <i data-lucide="trees" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-medium">ชนิดพืชทั้งหมดในระบบ</p>
+                                <h3 class="text-xl font-bold text-gray-900" id="stat-total-crops">0 ชนิด</h3>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <i data-lucide="droplet" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-medium">ปริมาณน้ำวันนี้</p>
+                                <h3 class="text-xl font-bold text-gray-900">420 ลิตร</h3>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                                <i data-lucide="calendar" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-medium">กำหนดให้ปุ๋ยถัดไป</p>
+                                <h3 class="text-xl font-bold text-gray-900">อีก 2 วัน</h3>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                                <i data-lucide="shield-alert" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-medium">พ่นชีวภัณฑ์ล่าสุด</p>
+                                <h3 class="text-xl font-bold text-gray-900">3 วันที่แล้ว</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-1">
+                            <h3 class="font-bold text-gray-900 mb-4 flex items-center justify-between">
+                                <span>สัดส่วนประเภทพืช</span>
+                                <i data-lucide="pie-chart" class="w-4 h-4 text-gray-400"></i>
+                            </h3>
+                            <div class="h-64 flex items-center justify-center">
+                                <canvas id="cropChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-2">
+                            <h3 class="font-bold text-gray-900 mb-4 flex items-center justify-between">
+                                <span>สถิติการให้น้ำ & โอกาสฝนตก (7 วัน)</span>
+                                <i data-lucide="trending-up" class="w-4 h-4 text-gray-400"></i>
+                            </h3>
+                            <div class="h-64">
+                                <canvas id="waterChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 2: CROPS MANAGEMENT -->
+                <section id="tab-crops" class="space-y-6 hidden">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">จัดการชนิดและประเภทพืช</h2>
+                        <p class="text-sm text-gray-500">จำแนกตามรายแปลงสวน สามารถเพิ่มและลบชนิดพืชได้ตลอดเวลา</p>
+                    </div>
+                    <div id="farm-management-container" class="space-y-6"></div>
+                </section>
+
+                <!-- TAB 3: IRRIGATION -->
+                <section id="tab-irrigation" class="space-y-8 hidden">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">ระบบตั้งค่าและบันทึกการให้น้ำ</h2>
+                        <p class="text-sm text-gray-500">จัดการตารางให้น้ำอัตโนมัติประจำวัน และบันทึกประวัติการให้น้ำด้วยตนเอง</p>
+                    </div>
+
+                    <!-- 1. การให้น้ำอัตโนมัติ -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
+                        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                    <i data-lucide="cpu" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-900">การให้น้ำอัตโนมัติ (ตั้งเวลารดน้ำ)</h3>
+                                    <p class="text-xs text-gray-500">กำหนด วัน เดือน ปี และช่วงเวลาเริ่ม-สิ้นสุดสำหรับรอบเช้าและเย็น</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form เพิ่มตารางอัตโนมัติ -->
+                        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-3">
+                            <h4 class="text-xs font-bold text-blue-900 flex items-center space-x-1">
+                                <i data-lucide="plus-circle" class="w-4 h-4 text-blue-600"></i>
+                                <span>เพิ่มตารางให้น้ำอัตโนมัติ</span>
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-medium text-gray-600 mb-1">แปลง / พืช</label>
+                                    <input type="text" id="auto-crop" placeholder="เช่น มะยงชิด สวนนครนายก" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-medium text-gray-600 mb-1">วัน เดือน ปี เริ่มต้น</label>
+                                    <input type="date" id="auto-date" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 bg-white">
+                                </div>
+                                
+                                <div class="bg-white p-2 rounded-lg border border-blue-100">
+                                    <span class="block text-[11px] font-bold text-amber-700 mb-1">🌅 รอบเช้า</span>
+                                    <div class="grid grid-cols-2 gap-1.5">
+                                        <div>
+                                            <span class="text-[9px] text-gray-400">เริ่ม:</span>
+                                            <input type="time" id="auto-morning-start" class="w-full px-2 py-1 text-xs rounded border border-gray-200">
+                                        </div>
+                                        <div>
+                                            <span class="text-[9px] text-gray-400">สิ้นสุด:</span>
+                                            <input type="time" id="auto-morning-end" class="w-full px-2 py-1 text-xs rounded border border-gray-200">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-2 rounded-lg border border-blue-100">
+                                    <span class="block text-[11px] font-bold text-indigo-700 mb-1">🌆 รอบเย็น</span>
+                                    <div class="grid grid-cols-2 gap-1.5">
+                                        <div>
+                                            <span class="text-[9px] text-gray-400">เริ่ม:</span>
+                                            <input type="time" id="auto-evening-start" class="w-full px-2 py-1 text-xs rounded border border-gray-200">
+                                        </div>
+                                        <div>
+                                            <span class="text-[9px] text-gray-400">สิ้นสุด:</span>
+                                            <input type="time" id="auto-evening-end" class="w-full px-2 py-1 text-xs rounded border border-gray-200">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-end lg:col-span-2">
+                                    <button onclick="addAutoSchedule()" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2.5 px-3 rounded-lg transition flex items-center justify-center space-x-1">
+                                        <i data-lucide="plus" class="w-4 h-4"></i>
+                                        <span>บันทึกตารางอัตโนมัติ</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ตารางแสดงรายการอัตโนมัติ -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-gray-50 text-gray-500 text-xs">
+                                    <tr>
+                                        <th class="p-3 pl-4">แปลง / พืช</th>
+                                        <th class="p-3">วัน เดือน ปี เริ่มต้น</th>
+                                        <th class="p-3">รอบเช้า (เริ่ม - สิ้นสุด)</th>
+                                        <th class="p-3">รอบเย็น (เริ่ม - สิ้นสุด)</th>
+                                        <th class="p-3 text-center">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="auto-schedule-table" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 2. การให้น้ำด้วยตนเอง -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
+                        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                    <i data-lucide="hand" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-900">การให้น้ำด้วยตนเอง (บันทึกย้อนหลัง / นอกรอบ)</h3>
+                                    <p class="text-xs text-gray-500">บันทึก วัน เดือน ปี และช่วงเวลาเริ่ม-สิ้นสุดของการเปิดน้ำด้วยมือ</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form บันทึกการให้น้ำด้วยตนเอง -->
+                        <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 space-y-3">
+                            <h4 class="text-xs font-bold text-emerald-900 flex items-center space-x-1">
+                                <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-600"></i>
+                                <span>บันทึกการให้น้ำด้วยตนเอง</span>
+                            </h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-medium text-gray-600 mb-1">แปลง / พืช</label>
+                                    <input type="text" id="manual-crop" placeholder="เช่น หน่อไม้ฝรั่ง" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-medium text-gray-600 mb-1">วัน เดือน ปี</label>
+                                    <input type="date" id="manual-date" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-medium text-gray-600 mb-1">เวลาเริ่มต้น</label>
+                                    <input type="time" id="manual-start-time" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-medium text-gray-600 mb-1">เวลาสิ้นสุด</label>
+                                    <input type="time" id="manual-end-time" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-medium text-gray-600 mb-1">ปริมาณ (ลิตร)</label>
+                                    <input type="number" id="manual-amount" placeholder="เช่น 50" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white">
+                                </div>
+                                <div class="flex items-end">
+                                    <button onclick="addManualLog()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2 px-3 rounded-lg transition flex items-center justify-center space-x-1">
+                                        <i data-lucide="plus" class="w-4 h-4"></i>
+                                        <span>บันทึกการให้น้ำ</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ตารางแสดงบันทึกการให้น้ำด้วยตนเอง -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-gray-50 text-gray-500 text-xs">
+                                    <tr>
+                                        <th class="p-3 pl-4">วัน เดือน ปี</th>
+                                        <th class="p-3">แปลง / พืช</th>
+                                        <th class="p-3">เวลาเริ่มต้น - สิ้นสุด</th>
+                                        <th class="p-3">ปริมาณ (ลิตร)</th>
+                                        <th class="p-3 text-center">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="manual-log-table" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 4: FERTILIZER -->
+                <section id="tab-fertilizer" class="space-y-6 hidden">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">การให้ปุ๋ย ฮอร์โมน และธาตุอาหาร</h2>
+                            <p class="text-sm text-gray-500">บันทึก วัน เดือน ปี เวลาการใส่ปุ๋ย และจัดการหมวดหมู่ประเภทปุ๋ย</p>
+                        </div>
+                        <button onclick="toggleFertilizerCategoryModal()" class="inline-flex items-center space-x-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm">
+                            <i data-lucide="settings-2" class="w-4 h-4"></i>
+                            <span>จัดการประเภทปุ๋ย (<span id="fert-cat-count">0</span>)</span>
+                        </button>
+                    </div>
+
+                    <!-- Form บันทึกการให้ปุ๋ย -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+                        <div class="flex items-center space-x-3 border-b border-gray-100 pb-3">
+                            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                                <i data-lucide="flask-conical" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">บันทึกการใส่ปุ๋ย / ฮอร์โมน</h3>
+                                <p class="text-xs text-gray-500">ระบุวัน เวลา แปลง/พืช และประเภทปุ๋ยที่ให้</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 bg-amber-50/40 p-4 rounded-xl border border-amber-100">
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">แปลง / ชนิดพืช</label>
+                                <input type="text" id="fert-crop" placeholder="เช่น มะยงชิด (สวนนครนายก)" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-amber-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">ประเภทปุ๋ย</label>
+                                <select id="fert-category-select" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-amber-500 bg-white text-gray-700"></select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">สูตรปุ๋ย / ชื่อทางการค้า</label>
+                                <input type="text" id="fert-formula" placeholder="เช่น 16-16-16 หรือ ปุ๋ยคอกหมัก" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-amber-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">ปริมาณที่ใส่</label>
+                                <input type="text" id="fert-amount" placeholder="เช่น 200 กรัม/ต้น" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-amber-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">วัน เดือน ปี ที่ให้ปุ๋ย</label>
+                                <input type="date" id="fert-date" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-amber-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">เวลาเริ่มต้น</label>
+                                <input type="time" id="fert-start-time" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-amber-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">เวลาสิ้นสุด</label>
+                                <input type="time" id="fert-end-time" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-amber-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">หมายเหตุเพิ่มเติม</label>
+                                <input type="text" id="fert-note" placeholder="เช่น ใส่หลังพรวนดิน" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-amber-500 bg-white">
+                            </div>
+                            <div class="md:col-span-3 lg:col-span-4 flex justify-end">
+                                <button onclick="addFertilizerLog()" class="w-full md:w-auto bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold py-2 px-6 rounded-lg transition flex items-center justify-center space-x-1 shadow-sm">
+                                    <i data-lucide="plus" class="w-4 h-4"></i>
+                                    <span>บันทึกประวัติการให้ปุ๋ย</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- ตารางแสดงประวัติการให้ปุ๋ย -->
+                        <div class="overflow-x-auto pt-2">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-gray-50 text-gray-500 text-xs">
+                                    <tr>
+                                        <th class="p-3 pl-4">วัน เดือน ปี</th>
+                                        <th class="p-3">เวลา (เริ่ม - สิ้นสุด)</th>
+                                        <th class="p-3">แปลง / พืช</th>
+                                        <th class="p-3">ประเภทปุ๋ย</th>
+                                        <th class="p-3">สูตร / รายละเอียด</th>
+                                        <th class="p-3">ปริมาณ</th>
+                                        <th class="p-3">หมายเหตุ</th>
+                                        <th class="p-3 text-center">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fertilizer-table-body" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 5: PEST CONTROL -->
+                <section id="tab-pest" class="space-y-6 hidden">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">การป้องกันและกำจัดศัตรูพืช</h2>
+                            <p class="text-sm text-gray-500">จัดการชนิดชีวภัณฑ์/สารเคมี และบันทึกประวัติการฉีดพ่น (วัน/เวลา)</p>
+                        </div>
+                        <button onclick="togglePestCategoryModal()" class="inline-flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm">
+                            <i data-lucide="settings-2" class="w-4 h-4"></i>
+                            <span>จัดการชนิดสารป้องกันพืช</span>
+                        </button>
+                    </div>
+
+                    <!-- Form บันทึกการฉีดพ่น -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+                        <div class="flex items-center space-x-3 border-b border-gray-100 pb-3">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <i data-lucide="shield-alert" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">บันทึกประวัติการฉีดพ่น</h3>
+                                <p class="text-xs text-gray-500">เลือกประเภท สารป้องกันพืช วันเดือนปี และเวลาเริ่มต้น-สิ้นสุดการพ่น</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 bg-emerald-50/40 p-4 rounded-xl border border-emerald-100">
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">แปลง / ชนิดพืช</label>
+                                <input type="text" id="pest-crop" placeholder="เช่น มะยงชิด (สวนนครนายก)" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">ประเภทหลัก</label>
+                                <select id="pest-main-type" onchange="updatePestSubtypeOptions()" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white text-gray-700">
+                                    <option value="ชีวภัณฑ์">ชีวภัณฑ์</option>
+                                    <option value="สารเคมี">สารเคมี</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">ชนิดย่อย (ชื่อสาร)</label>
+                                <select id="pest-subtype-select" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white text-gray-700"></select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">เป้าหมายศัตรูพืช</label>
+                                <input type="text" id="pest-target" placeholder="เช่น เพลี้ยไฟ ไรแดง หนอนเจาะ" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">อัตราการใช้ / ปริมาณ</label>
+                                <input type="text" id="pest-dosage" placeholder="เช่น 50g / น้ำ 20 ลิตร" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">วัน เดือน ปี ที่ฉีดพ่น</label>
+                                <input type="date" id="pest-date" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">เวลาเริ่มต้น</label>
+                                <input type="time" id="pest-start-time" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-600 mb-1">เวลาสิ้นสุด</label>
+                                <input type="time" id="pest-end-time" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white">
+                            </div>
+                            <div class="md:col-span-3 lg:col-span-4 flex justify-end">
+                                <button onclick="addPestLog()" class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2 px-6 rounded-lg transition flex items-center justify-center space-x-1 shadow-sm">
+                                    <i data-lucide="plus" class="w-4 h-4"></i>
+                                    <span>บันทึกประวัติการฉีดพ่น</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- ตารางแสดงประวัติการฉีดพ่น -->
+                        <div class="overflow-x-auto pt-2">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-gray-50 text-gray-500 text-xs">
+                                    <tr>
+                                        <th class="p-3 pl-4">วัน เดือน ปี</th>
+                                        <th class="p-3">เวลา (เริ่ม - สิ้นสุด)</th>
+                                        <th class="p-3">แปลง / พืช</th>
+                                        <th class="p-3">ประเภท</th>
+                                        <th class="p-3">ชนิดย่อย / สาร</th>
+                                        <th class="p-3">เป้าหมาย</th>
+                                        <th class="p-3">อัตราใช้</th>
+                                        <th class="p-3 text-center">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pest-log-table-body" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 6: องค์ความรู้ (KNOWLEDGE BASE - GEMINI & GEMINI NOTEBOOK) -->
+                <section id="tab-knowledge" class="space-y-6 hidden">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">แหล่งองค์ความรู้สวนผสมผสาน</h2>
+                        <p class="text-sm text-gray-500">เชื่อมโยงกับปัญญาประดิษฐ์ (AI) เพื่อค้นหาคำแนะนำและจัดการข้อมูลแปลงเกษตร</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <!-- 1. หัวข้อย่อย: Gemini (ผู้ช่วยให้คำปรึกษาอัจฉริยะ) -->
+                        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between space-y-4 relative overflow-hidden">
+                            <div class="absolute -right-6 -top-6 w-28 h-28 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                            <div class="space-y-3">
+                                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
+                                    <i data-lucide="sparkles" class="w-6 h-6"></i>
+                                </div>
+                                <span class="bg-blue-50 text-blue-700 text-[11px] px-2.5 py-0.5 rounded-full font-semibold">AI Assistant</span>
+                                <h3 class="text-xl font-bold text-gray-900">Gemini (ผู้ช่วยอัจฉริยะประจำสวน)</h3>
+                                <p class="text-xs text-gray-500 leading-relaxed">
+                                    ปรึกษาปัญหาการเกษตรเฉพาะหน้า เช่น การดูแลดิน การให้ปุ๋ยตามช่วงอายุพืช การแก้โรคพืช และการคำนวณระบบพลังงานแสงอาทิตย์สำหรับเกษตรกร
+                                </p>
+                                <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-xs text-gray-600 space-y-1">
+                                    <p class="font-semibold text-gray-700">💡 หัวข้อแนะนำสำหรับคุณ:</p>
+                                    <ul class="list-disc list-inside space-y-0.5 text-gray-500 pl-1">
+                                        <li>เทคนิคการแต่งกิ่งและบำรุงต้นมะยงชิด</li>
+                                        <li>การจัดการแปลงมะเดื่อฝรั่ง (Martinenca Rimada)</li>
+                                        <li>การคำนวณโหลดอินเวอร์เตอร์โซล่าร์เซลล์ 10kW</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="pt-2">
+                                <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center space-x-2 shadow-sm">
+                                    <i data-lucide="external-link" class="w-4 h-4"></i>
+                                    <span>เปิดใช้งาน Gemini</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- 2. หัวข้อย่อย: Gemini Notebook (NotebookLM - ฐานข้อมูลองค์ความรู้สวน) -->
+                        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between space-y-4 relative overflow-hidden">
+                            <div class="absolute -right-6 -top-6 w-28 h-28 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                            <div class="space-y-3">
+                                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20">
+                                    <i data-lucide="book-open" class="w-6 h-6"></i>
+                                </div>
+                                <span class="bg-emerald-50 text-emerald-700 text-[11px] px-2.5 py-0.5 rounded-full font-semibold">Knowledge Base</span>
+                                <h3 class="text-xl font-bold text-gray-900">Gemini Notebook (สมุดบันทึกองค์ความรู้)</h3>
+                                <p class="text-xs text-gray-500 leading-relaxed">
+                                    แหล่งรวบรวมเอกสาร คู่มือการเกษตร คู่มืออุปกรณ์โซล่าร์เซลล์ และบันทึกประวัติแปลง 9 ไร่ (นครนายก) และ 3 ไร่ (กาญจนบุรี) เพื่อสืบค้นข้อมูลเชิงลึก
+                                </p>
+                                <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-xs text-gray-600 space-y-1">
+                                    <p class="font-semibold text-gray-700">📚 แหล่งข้อมูลในสมุด:</p>
+                                    <ul class="list-disc list-inside space-y-0.5 text-gray-500 pl-1">
+                                        <li>คู่มือคู่มือการจัดการแปลงเกษตรผสมผสาน</li>
+                                        <li>บันทึกตารางการให้ปุ๋ยและสารป้องกันพืช</li>
+                                        <li>ข้อมูลทางเทคนิคระบบน้ำและโซล่าร์ V2L</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="pt-2">
+                                <a href="https://notebooklm.google.com" target="_blank" rel="noopener noreferrer" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center space-x-2 shadow-sm">
+                                    <i data-lucide="external-link" class="w-4 h-4"></i>
+                                    <span>เปิดใช้งาน Gemini Notebook</span>
+                                </a>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- Mobile Bottom Tab Bar (อัปเดตให้รองรับ 6 ปุ่ม หรือเลื่อนดู) -->
+            <nav class="md:hidden bg-white/90 backdrop-blur-lg border-t border-gray-200 fixed bottom-0 left-0 right-0 z-30 pb-safe">
+                <div class="grid grid-cols-6 h-16">
+                    <button onclick="switchTab('dashboard')" id="mobile-nav-dashboard" class="mobile-nav-btn flex flex-col items-center justify-center text-sage-600 font-medium">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                        <span class="text-[9px] mt-1">ภาพรวม</span>
+                    </button>
+                    <button onclick="switchTab('crops')" id="mobile-nav-crops" class="mobile-nav-btn flex flex-col items-center justify-center text-gray-400 font-medium">
+                        <i data-lucide="trees" class="w-4 h-4"></i>
+                        <span class="text-[9px] mt-1">พืช</span>
+                    </button>
+                    <button onclick="switchTab('irrigation')" id="mobile-nav-irrigation" class="mobile-nav-btn flex flex-col items-center justify-center text-gray-400 font-medium">
+                        <i data-lucide="droplets" class="w-4 h-4"></i>
+                        <span class="text-[9px] mt-1">ให้น้ำ</span>
+                    </button>
+                    <button onclick="switchTab('fertilizer')" id="mobile-nav-fertilizer" class="mobile-nav-btn flex flex-col items-center justify-center text-gray-400 font-medium">
+                        <i data-lucide="flask-conical" class="w-4 h-4"></i>
+                        <span class="text-[9px] mt-1">ปุ๋ย</span>
+                    </button>
+                    <button onclick="switchTab('pest')" id="mobile-nav-pest" class="mobile-nav-btn flex flex-col items-center justify-center text-gray-400 font-medium">
+                        <i data-lucide="shield-check" class="w-4 h-4"></i>
+                        <span class="text-[9px] mt-1">ศัตรูพืช</span>
+                    </button>
+                    <button onclick="switchTab('knowledge')" id="mobile-nav-knowledge" class="mobile-nav-btn flex flex-col items-center justify-center text-gray-400 font-medium">
+                        <i data-lucide="book-open-check" class="w-4 h-4"></i>
+                        <span class="text-[9px] mt-1">องค์ความรู้</span>
+                    </button>
+                </div>
+            </nav>
+
+        </main>
+    </div>
+
+    <!-- MODAL: จัดการประเภทปุ๋ย -->
+    <div id="fert-cat-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 space-y-4 shadow-xl border border-gray-100">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h3 class="font-bold text-gray-900 text-base flex items-center space-x-2">
+                    <i data-lucide="list-plus" class="w-5 h-5 text-amber-500"></i>
+                    <span>จัดการประเภทปุ๋ย</span>
+                </h3>
+                <button onclick="toggleFertilizerCategoryModal()" class="text-gray-400 hover:text-gray-600 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="flex gap-2">
+                <input type="text" id="new-fert-cat-input" placeholder="พิมพ์ชื่อประเภทปุ๋ยใหม่..." class="flex-1 px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                <button onclick="addFertilizerCategory()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1 transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>เพิ่ม</span>
+                </button>
+            </div>
+            <div class="space-y-2 max-h-60 overflow-y-auto pr-1" id="fert-cat-list-container"></div>
+            <div class="pt-2 border-t border-gray-100 flex justify-end">
+                <button onclick="toggleFertilizerCategoryModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-4 py-2 rounded-lg font-semibold">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: จัดการชนิดชีวภัณฑ์ และ สารเคมี (ป้องกันศัตรูพืช) -->
+    <div id="pest-cat-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-2xl p-6 max-w-lg w-full mx-4 space-y-5 shadow-xl border border-gray-100">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h3 class="font-bold text-gray-900 text-base flex items-center space-x-2">
+                    <i data-lucide="settings-2" class="w-5 h-5 text-emerald-600"></i>
+                    <span>จัดการชนิดสารป้องกันและกำจัดศัตรูพืช</span>
+                </h3>
+                <button onclick="togglePestCategoryModal()" class="text-gray-400 hover:text-gray-600 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- ฝั่งชีวภัณฑ์ -->
+                <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 space-y-3">
+                    <h4 class="font-bold text-emerald-900 text-xs flex items-center space-x-1">
+                        <i data-lucide="sprout" class="w-4 h-4 text-emerald-600"></i>
+                        <span>กลุ่มชีวภัณฑ์</span>
+                    </h4>
+                    <div class="flex gap-1.5">
+                        <input type="text" id="new-bio-input" placeholder="เพิ่มชนิดชีวภัณฑ์..." class="flex-1 px-2.5 py-1 text-xs rounded-lg border border-gray-200 bg-white">
+                        <button onclick="addPestSubtype('ชีวภัณฑ์')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1 rounded-lg font-semibold">เพิ่ม</button>
+                    </div>
+                    <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1" id="bio-list-container"></div>
+                </div>
+
+                <!-- ฝั่งสารเคมี -->
+                <div class="bg-rose-50/50 p-4 rounded-xl border border-rose-100 space-y-3">
+                    <h4 class="font-bold text-rose-900 text-xs flex items-center space-x-1">
+                        <i data-lucide="flask-conical" class="w-4 h-4 text-rose-600"></i>
+                        <span>กลุ่มสารเคมี</span>
+                    </h4>
+                    <div class="flex gap-1.5">
+                        <input type="text" id="new-chem-input" placeholder="เพิ่มชื่อสารเคมี..." class="flex-1 px-2.5 py-1 text-xs rounded-lg border border-gray-200 bg-white">
+                        <button onclick="addPestSubtype('สารเคมี')" class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-2.5 py-1 rounded-lg font-semibold">เพิ่ม</button>
+                    </div>
+                    <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1" id="chem-list-container"></div>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-gray-100 flex justify-end">
+                <button onclick="togglePestCategoryModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-4 py-2 rounded-lg font-semibold">เสร็จสิ้น</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Javascript Logic -->
+    <script>
+        const farmData = {
+            nakhonNayok: {
+                name: "สวนนครนายก (อ.บ้านนา)",
+                icon: "map-pin",
+                categories: {
+                    perennial: { title: "พืชยืนต้น", items: ["มะยงชิด", "มะปรางหวาน", "ขนุน"] },
+                    other: { title: "พืชอื่นๆ", items: ["กล้วยน้ำว้า", "มะเดื่อฝรั่ง"] },
+                    vegetable: { title: "ผัก", items: ["หน่อไม้ฝรั่ง"] }
+                }
+            },
+            kanchanaburi: {
+                name: "สวนกาญจนบุรี (อ.ท่าม่วง)",
+                icon: "map-pin",
+                categories: {
+                    perennial: { title: "พืชยืนต้น", items: ["มะขาม"] },
+                    other: { title: "พืชอื่นๆ", items: [] },
+                    vegetable: { title: "ผัก", items: [] }
+                }
+            }
+        };
+
+        let autoSchedules = [
+            { id: 1, crop: 'มะยงชิด (สวนนครนายก)', date: '2026-08-01', morningStart: '06:30', morningEnd: '07:15', eveningStart: '17:30', eveningEnd: '18:15' },
+            { id: 2, crop: 'หน่อไม้ฝรั่ง (สวนนครนายก)', date: '2026-08-15', morningStart: '07:00', morningEnd: '07:30', eveningStart: '18:00', eveningEnd: '18:30' }
+        ];
+
+        let manualLogs = [
+            { id: 1, date: '2026-08-30', startTime: '08:15', endTime: '08:45', crop: 'มะยงชิด (สวนนครนายก)', amount: 150 },
+            { id: 2, date: '2026-08-29', startTime: '16:45', endTime: '17:15', crop: 'หน่อไม้ฝรั่ง (สวนนครนายก)', amount: 50 }
+        ];
+
+        let fertilizerCategories = [
+            "ปุ๋ยเคมีทางดิน",
+            "ปุ๋ยเคมีทางใบ",
+            "ธาตุอาหารเสริม/รอง",
+            "ปุ๋ยหมัก",
+            "ปุ๋ยอินทรีย์เคมี",
+            "ฮอร์โมน"
+        ];
+
+        let fertilizerLogs = [
+            { id: 1, date: '2026-08-25', startTime: '07:00', endTime: '08:30', crop: 'มะยงชิด (สวนนครนายก)', category: 'ปุ๋ยเคมีทางดิน', formula: 'สูตร 16-16-16', amount: '200 กรัม/ต้น', note: 'ฟื้นฟูต้นหลังเก็บเกี่ยว' },
+            { id: 2, date: '2026-08-20', startTime: '16:00', endTime: '17:30', crop: 'หน่อไม้ฝรั่ง (สวนนครนายก)', category: 'ปุ๋ยหมัก', formula: 'มูลไก่หมักชีวภาพ', amount: '1 กก./ตารางเมตร', note: 'เร่งการเจริญเติบโตของหน่อ' }
+        ];
+
+        let pestSubtypes = {
+            "ชีวภัณฑ์": [
+                "เชื้อราบิวเวอเรีย (Beauveria bassiana)",
+                "เชื้อราไตรโคเดอร์มา (Trichoderma)",
+                "บาซิลรัส ซับทิลิส (Bacillus subtilis)",
+                "น้ำส้มควันไม้"
+            ],
+            "สารเคมี": [
+                "อิดาโคลพริด (กำจัดเพลี้ยไฟ/แมลงปากดูด)",
+                "ไพริดาเบล (กำจัดไรแดง)",
+                "แมนโกเซบ (ป้องกันโรคราน้ำค้าง/ราสนิม)"
+            ]
+        };
+
+        let pestLogs = [
+            { id: 1, date: '2026-08-27', startTime: '17:00', endTime: '18:30', crop: 'มะยงชิด & มะเดื่อฝรั่ง', mainType: 'ชีวภัณฑ์', subtype: 'เชื้อราบิวเวอเรีย (Beauveria bassiana)', target: 'เพลี้ยไฟ, ไรแดง', dosage: '50g / น้ำ 20 ลิตร' }
+        ];
+
+        let cropChart;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('current-date-str').textContent = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+            
+            renderFarmManagement();
+            renderAutoSchedules();
+            renderManualLogs();
+            renderFertilizerCategories();
+            renderFertilizerLogs();
+            renderPestSubtypeOptions();
+            renderPestModalLists();
+            renderPestLogs();
+            initCharts();
+            lucide.createIcons();
+        });
+
+        function formatDateThai(dateStr) {
+            if(!dateStr) return '-';
+            const [y, m, d] = dateStr.split('-');
+            const yearTH = parseInt(y) + 543;
+            return `${d}/${m}/${yearTH}`;
+        }
+
+        // ------------------ ระบบจัดการประเภทปุ๋ย ------------------
+        function toggleFertilizerCategoryModal() {
+            document.getElementById('fert-cat-modal').classList.toggle('hidden');
+        }
+
+        function renderFertilizerCategories() {
+            const select = document.getElementById('fert-category-select');
+            select.innerHTML = '';
+            fertilizerCategories.forEach(cat => {
+                select.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+
+            const container = document.getElementById('fert-cat-list-container');
+            container.innerHTML = '';
+            fertilizerCategories.forEach((cat, idx) => {
+                container.innerHTML += `
+                    <div class="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 text-xs">
+                        <span class="font-medium text-gray-700">🌱 ${cat}</span>
+                        <button onclick="removeFertilizerCategory(${idx})" class="text-rose-500 hover:bg-rose-50 p-1 rounded transition" title="ลบประเภทปุ๋ย">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            document.getElementById('fert-cat-count').textContent = fertilizerCategories.length;
+            lucide.createIcons();
+        }
+
+        function addFertilizerCategory() {
+            const input = document.getElementById('new-fert-cat-input');
+            const val = input.value.trim();
+            if (val) {
+                if (!fertilizerCategories.includes(val)) {
+                    fertilizerCategories.push(val);
+                    input.value = '';
+                    renderFertilizerCategories();
+                } else {
+                    alert('มีประเภทปุ๋ยนี้อยู่แล้ว');
+                }
+            }
+        }
+
+        function removeFertilizerCategory(idx) {
+            if (fertilizerCategories.length <= 1) {
+                alert('ต้องมีประเภทปุ๋ยอย่างน้อย 1 รายการ');
+                return;
+            }
+            fertilizerCategories.splice(idx, 1);
+            renderFertilizerCategories();
+        }
+
+        function renderFertilizerLogs() {
+            const tbody = document.getElementById('fertilizer-table-body');
+            tbody.innerHTML = '';
+            if (fertilizerLogs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400 text-xs">ไม่มีประวัติการให้ปุ๋ย</td></tr>`;
+                return;
+            }
+
+            fertilizerLogs.forEach((log, index) => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-3 pl-4 font-medium text-gray-900">${formatDateThai(log.date)}</td>
+                        <td class="p-3 text-gray-700 font-medium">${log.startTime} - ${log.endTime} น.</td>
+                        <td class="p-3 font-semibold text-gray-800">${log.crop}</td>
+                        <td class="p-3">
+                            <span class="bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                ${log.category}
+                            </span>
+                        </td>
+                        <td class="p-3 text-gray-700">${log.formula}</td>
+                        <td class="p-3 font-semibold text-amber-700">${log.amount}</td>
+                        <td class="p-3 text-gray-500 text-xs">${log.note || '-'}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="removeFertilizerLog(${index})" class="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition" title="ลบบันทึก">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function addFertilizerLog() {
+            const crop = document.getElementById('fert-crop').value.trim();
+            const category = document.getElementById('fert-category-select').value;
+            const formula = document.getElementById('fert-formula').value.trim();
+            const amount = document.getElementById('fert-amount').value.trim();
+            const date = document.getElementById('fert-date').value;
+            const startTime = document.getElementById('fert-start-time').value;
+            const endTime = document.getElementById('fert-end-time').value;
+            const note = document.getElementById('fert-note').value.trim();
+
+            if (crop && category && formula && amount && date && startTime && endTime) {
+                fertilizerLogs.push({ id: Date.now(), date, startTime, endTime, crop, category, formula, amount, note });
+                document.getElementById('fert-crop').value = '';
+                document.getElementById('fert-formula').value = '';
+                document.getElementById('fert-amount').value = '';
+                document.getElementById('fert-date').value = '';
+                document.getElementById('fert-start-time').value = '';
+                document.getElementById('fert-end-time').value = '';
+                document.getElementById('fert-note').value = '';
+                renderFertilizerLogs();
+            } else {
+                alert('กรุณากรอกข้อมูล วัน เดือน ปี เวลา และรายละเอียดการให้ปุ๋ยให้ครบถ้วน');
+            }
+        }
+
+        function removeFertilizerLog(index) {
+            fertilizerLogs.splice(index, 1);
+            renderFertilizerLogs();
+        }
+
+        // ------------------ ระบบจัดการศัตรูพืช ------------------
+        function togglePestCategoryModal() {
+            document.getElementById('pest-cat-modal').classList.toggle('hidden');
+        }
+
+        function renderPestModalLists() {
+            const bioContainer = document.getElementById('bio-list-container');
+            bioContainer.innerHTML = '';
+            pestSubtypes["ชีวภัณฑ์"].forEach((item, idx) => {
+                bioContainer.innerHTML += `
+                    <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded border border-emerald-100 text-xs">
+                        <span class="text-gray-700">• ${item}</span>
+                        <button onclick="removePestSubtype('ชีวภัณฑ์', ${idx})" class="text-rose-500 hover:bg-rose-50 p-1 rounded">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+            });
+
+            const chemContainer = document.getElementById('chem-list-container');
+            chemContainer.innerHTML = '';
+            pestSubtypes["สารเคมี"].forEach((item, idx) => {
+                chemContainer.innerHTML += `
+                    <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded border border-rose-100 text-xs">
+                        <span class="text-gray-700">• ${item}</span>
+                        <button onclick="removePestSubtype('สารเคมี', ${idx})" class="text-rose-500 hover:bg-rose-50 p-1 rounded">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            renderPestSubtypeOptions();
+            lucide.createIcons();
+        }
+
+        function updatePestSubtypeOptions() {
+            const mainType = document.getElementById('pest-main-type').value;
+            const subtypeSelect = document.getElementById('pest-subtype-select');
+            subtypeSelect.innerHTML = '';
+            
+            const list = pestSubtypes[mainType] || [];
+            list.forEach(item => {
+                subtypeSelect.innerHTML += `<option value="${item}">${item}</option>`;
+            });
+        }
+
+        function addPestSubtype(mainType) {
+            const inputId = mainType === 'ชีวภัณฑ์' ? 'new-bio-input' : 'new-chem-input';
+            const input = document.getElementById(inputId);
+            const val = input.value.trim();
+            if (val) {
+                if (!pestSubtypes[mainType].includes(val)) {
+                    pestSubtypes[mainType].push(val);
+                    input.value = '';
+                    renderPestModalLists();
+                } else {
+                    alert('มีรายการนี้อยู่แล้วในระบบ');
+                }
+            }
+        }
+
+        function removePestSubtype(mainType, idx) {
+            if (pestSubtypes[mainType].length <= 1) {
+                alert('ต้องมีรายการย่อยอย่างน้อย 1 รายการ');
+                return;
+            }
+            pestSubtypes[mainType].splice(idx, 1);
+            renderPestModalLists();
+        }
+
+        function renderPestSubtypeOptions() {
+            const mainType = document.getElementById('pest-main-type').value;
+            const subtypeSelect = document.getElementById('pest-subtype-select');
+            const currentSelected = subtypeSelect.value;
+            
+            subtypeSelect.innerHTML = '';
+            const list = pestSubtypes[mainType] || [];
+            list.forEach(item => {
+                subtypeSelect.innerHTML += `<option value="${item}">${item}</option>`;
+            });
+            if (list.includes(currentSelected)) {
+                subtypeSelect.value = currentSelected;
+            }
+        }
+
+        function renderPestLogs() {
+            const tbody = document.getElementById('pest-log-table-body');
+            tbody.innerHTML = '';
+            if (pestLogs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400 text-xs">ไม่มีประวัติการฉีดพ่นสารป้องกันพืช</td></tr>`;
+                return;
+            }
+
+            pestLogs.forEach((log, index) => {
+                const badgeClass = log.mainType === 'ชีวภัณฑ์' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200';
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-3 pl-4 font-medium text-gray-900">${formatDateThai(log.date)}</td>
+                        <td class="p-3 text-gray-700 font-medium">${log.startTime} - ${log.endTime} น.</td>
+                        <td class="p-3 font-semibold text-gray-800">${log.crop}</td>
+                        <td class="p-3">
+                            <span class="${badgeClass} border px-2 py-0.5 rounded-md text-xs font-semibold">
+                                ${log.mainType}
+                            </span>
+                        </td>
+                        <td class="p-3 text-gray-700 text-xs">${log.subtype}</td>
+                        <td class="p-3 text-rose-600 font-medium text-xs">${log.target}</td>
+                        <td class="p-3 font-semibold text-emerald-700 text-xs">${log.dosage}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="removePestLog(${index})" class="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition" title="ลบบันทึก">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function addPestLog() {
+            const crop = document.getElementById('pest-crop').value.trim();
+            const mainType = document.getElementById('pest-main-type').value;
+            const subtype = document.getElementById('pest-subtype-select').value;
+            const target = document.getElementById('pest-target').value.trim();
+            const dosage = document.getElementById('pest-dosage').value.trim();
+            const date = document.getElementById('pest-date').value;
+            const startTime = document.getElementById('pest-start-time').value;
+            const endTime = document.getElementById('pest-end-time').value;
+
+            if (crop && mainType && subtype && target && dosage && date && startTime && endTime) {
+                pestLogs.push({ id: Date.now(), crop, mainType, subtype, target, dosage, date, startTime, endTime });
+                document.getElementById('pest-crop').value = '';
+                document.getElementById('pest-target').value = '';
+                document.getElementById('pest-dosage').value = '';
+                document.getElementById('pest-date').value = '';
+                document.getElementById('pest-start-time').value = '';
+                document.getElementById('pest-end-time').value = '';
+                renderPestLogs();
+            } else {
+                alert('กรุณากรอกข้อมูลการฉีดพ่น วัน เดือน ปี และเวลาให้ครบถ้วน');
+            }
+        }
+
+        function removePestLog(index) {
+            pestLogs.splice(index, 1);
+            renderPestLogs();
+        }
+
+        // ------------------ ระบบจัดการการให้น้ำ ------------------
+        function renderAutoSchedules() {
+            const table = document.getElementById('auto-schedule-table');
+            table.innerHTML = '';
+            if (autoSchedules.length === 0) {
+                table.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400 text-xs">ไม่มีตารางการให้น้ำอัตโนมัติ</td></tr>`;
+                return;
+            }
+            autoSchedules.forEach((item, index) => {
+                table.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-3 pl-4 font-medium text-gray-900">${item.crop}</td>
+                        <td class="p-3 text-gray-700">${formatDateThai(item.date)}</td>
+                        <td class="p-3">
+                            <span class="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md text-xs font-semibold inline-flex items-center space-x-1">
+                                <span>🌅 ${item.morningStart} - ${item.morningEnd} น.</span>
+                            </span>
+                        </td>
+                        <td class="p-3">
+                            <span class="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md text-xs font-semibold inline-flex items-center space-x-1">
+                                <span>🌆 ${item.eveningStart} - ${item.eveningEnd} น.</span>
+                            </span>
+                        </td>
+                        <td class="p-3 text-center">
+                            <button onclick="removeAutoSchedule(${index})" class="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition" title="ลบตาราง">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function addAutoSchedule() {
+            const crop = document.getElementById('auto-crop').value.trim();
+            const date = document.getElementById('auto-date').value;
+            const morningStart = document.getElementById('auto-morning-start').value;
+            const morningEnd = document.getElementById('auto-morning-end').value;
+            const eveningStart = document.getElementById('auto-evening-start').value;
+            const eveningEnd = document.getElementById('auto-evening-end').value;
+
+            if (crop && date && morningStart && morningEnd && eveningStart && eveningEnd) {
+                autoSchedules.push({ id: Date.now(), crop, date, morningStart, morningEnd, eveningStart, eveningEnd });
+                document.getElementById('auto-crop').value = '';
+                document.getElementById('auto-date').value = '';
+                document.getElementById('auto-morning-start').value = '';
+                document.getElementById('auto-morning-end').value = '';
+                document.getElementById('auto-evening-start').value = '';
+                document.getElementById('auto-evening-end').value = '';
+                renderAutoSchedules();
+            } else {
+                alert('กรุณากรอกข้อมูลและเวลาเริ่ม-สิ้นสุดของตารางอัตโนมัติให้ครบถ้วน');
+            }
+        }
+
+        function removeAutoSchedule(index) {
+            autoSchedules.splice(index, 1);
+            renderAutoSchedules();
+        }
+
+        function renderManualLogs() {
+            const table = document.getElementById('manual-log-table');
+            table.innerHTML = '';
+            if (manualLogs.length === 0) {
+                table.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400 text-xs">ไม่มีประวัติการให้น้ำด้วยตนเอง</td></tr>`;
+                return;
+            }
+            manualLogs.forEach((log, index) => {
+                table.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-3 pl-4 font-medium text-gray-900">${formatDateThai(log.date)}</td>
+                        <td class="p-3 text-gray-800">${log.crop}</td>
+                        <td class="p-3 text-gray-700 font-semibold">${log.startTime} - ${log.endTime} น.</td>
+                        <td class="p-3 font-semibold text-emerald-700">${log.amount} ลิตร</td>
+                        <td class="p-3 text-center">
+                            <button onclick="removeManualLog(${index})" class="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition" title="ลบบันทึก">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function addManualLog() {
+            const crop = document.getElementById('manual-crop').value.trim();
+            const date = document.getElementById('manual-date').value;
+            const startTime = document.getElementById('manual-start-time').value;
+            const endTime = document.getElementById('manual-end-time').value;
+            const amount = document.getElementById('manual-amount').value;
+
+            if (crop && date && startTime && endTime && amount) {
+                manualLogs.push({ id: Date.now(), crop, date, startTime, endTime, amount });
+                document.getElementById('manual-crop').value = '';
+                document.getElementById('manual-date').value = '';
+                document.getElementById('manual-start-time').value = '';
+                document.getElementById('manual-end-time').value = '';
+                document.getElementById('manual-amount').value = '';
+                renderManualLogs();
+            } else {
+                alert('กรุณากรอกข้อมูลและเวลาเริ่ม-สิ้นสุดของการให้น้ำด้วยตนเองให้ครบถ้วน');
+            }
+        }
+
+        function removeManualLog(index) {
+            manualLogs.splice(index, 1);
+            renderManualLogs();
+        }
+
+        // ------------------ ระบบทั่วไป ------------------
+        function renderFarmManagement() {
+            const container = document.getElementById('farm-management-container');
+            container.innerHTML = '';
+            let totalCropsCount = 0;
+
+            Object.keys(farmData).forEach(farmKey => {
+                const farm = farmData[farmKey];
+                const farmCard = document.createElement('div');
+                farmCard.className = "bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4";
+                
+                let farmHtml = `
+                    <div class="flex items-center space-x-2 border-b border-gray-100 pb-3">
+                        <div class="w-8 h-8 rounded-lg bg-sage-50 text-sage-600 flex items-center justify-center">
+                            <i data-lucide="map-pin" class="w-5 h-5"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900">${farm.name}</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                `;
+
+                Object.keys(farm.categories).forEach(catKey => {
+                    const cat = farm.categories[catKey];
+                    totalCropsCount += cat.items.length;
+
+                    farmHtml += `
+                        <div class="bg-gray-50/70 p-4 rounded-xl border border-gray-100 flex flex-col justify-between">
+                            <div>
+                                <h4 class="font-bold text-sm text-gray-700 mb-3 flex items-center justify-between">
+                                    <span>🌱 ${cat.title}</span>
+                                    <span class="text-xs text-gray-400 bg-white px-2 py-0.5 rounded-md border border-gray-100">${cat.items.length} รายการ</span>
+                                </h4>
+                                <div class="space-y-2 mb-4">
+                    `;
+
+                    if (cat.items.length === 0) {
+                        farmHtml += `<p class="text-xs text-gray-400 italic py-2 text-center">(ยังไม่มีรายการ)</p>`;
+                    } else {
+                        cat.items.forEach((item, index) => {
+                            farmHtml += `
+                                <div class="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-gray-100 text-sm shadow-sm">
+                                    <span class="font-medium text-gray-700">• ${item}</span>
+                                    <button onclick="removePlant('${farmKey}', '${catKey}', ${index})" class="text-rose-500 hover:bg-rose-50 p-1 rounded-md transition" title="ลบรายการ">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    farmHtml += `
+                                </div>
+                            </div>
+                            <div class="flex gap-2 pt-2 border-t border-gray-200/60">
+                                <input type="text" id="input-${farmKey}-${catKey}" placeholder="เพิ่มชนิดพืช..." onkeypress="handleKeyPress(event, '${farmKey}', '${catKey}')" class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-sage-500">
+                                <button onclick="addPlant('${farmKey}', '${catKey}')" class="bg-sage-500 hover:bg-sage-600 text-white text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center justify-center space-x-1 shrink-0 transition">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                    <span>เพิ่ม</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                farmHtml += `</div>`;
+                farmCard.innerHTML = farmHtml;
+                container.appendChild(farmCard);
+            });
+
+            document.getElementById('stat-total-crops').textContent = `${totalCropsCount} ชนิด`;
+            lucide.createIcons();
+        }
+
+        function addPlant(farmKey, catKey) {
+            const input = document.getElementById(`input-${farmKey}-${catKey}`);
+            const value = input.value.trim();
+            if (value) {
+                farmData[farmKey].categories[catKey].items.push(value);
+                input.value = '';
+                renderFarmManagement();
+                updateCropChart();
+            }
+        }
+
+        function handleKeyPress(event, farmKey, catKey) {
+            if (event.key === 'Enter') {
+                addPlant(farmKey, catKey);
+            }
+        }
+
+        function removePlant(farmKey, catKey, index) {
+            farmData[farmKey].categories[catKey].items.splice(index, 1);
+            renderFarmManagement();
+            updateCropChart();
+        }
+
+        function switchTab(tabName) {
+            const tabs = ['dashboard', 'crops', 'irrigation', 'fertilizer', 'pest', 'knowledge'];
+            tabs.forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                
+                const navBtn = document.getElementById(`nav-${t}`);
+                if(navBtn) {
+                    navBtn.classList.remove('bg-sage-500', 'text-white', 'shadow-md', 'shadow-sage-500/20');
+                    navBtn.classList.add('text-gray-600', 'hover:bg-gray-100');
+                }
+
+                const mNavBtn = document.getElementById(`mobile-nav-${t}`);
+                if(mNavBtn) {
+                    mNavBtn.classList.remove('text-sage-600');
+                    mNavBtn.classList.add('text-gray-400');
+                }
+            });
+
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            
+            const activeNav = document.getElementById(`nav-${tabName}`);
+            if(activeNav) {
+                activeNav.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                activeNav.classList.add('bg-sage-500', 'text-white', 'shadow-md', 'shadow-sage-500/20');
+            }
+
+            const activeMobileNav = document.getElementById(`mobile-nav-${tabName}`);
+            if(activeMobileNav) {
+                activeMobileNav.classList.remove('text-gray-400');
+                activeMobileNav.classList.add('text-sage-600');
+            }
+        }
+
+        function getCropChartData() {
+            let counts = { perennial: 0, other: 0, vegetable: 0 };
+            Object.keys(farmData).forEach(f => {
+                Object.keys(farmData[f].categories).forEach(c => {
+                    counts[c] += farmData[f].categories[c].items.length;
+                });
+            });
+            return {
+                labels: ['พืชยืนต้น', 'พืชอื่นๆ', 'ผัก'],
+                datasets: [{
+                    data: [counts.perennial, counts.other, counts.vegetable],
+                    backgroundColor: ['#2e7d32', '#f59e0b', '#10b981']
+                }]
+            };
+        }
+
+        function initCharts() {
+            const ctx1 = document.getElementById('cropChart').getContext('2d');
+            cropChart = new Chart(ctx1, {
+                type: 'doughnut',
+                data: getCropChartData(),
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { font: { family: 'Prompt', size: 11 } } } },
+                    cutout: '70%'
+                }
+            });
+
+            const ctx2 = document.getElementById('waterChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์', 'อาทิตย์'],
+                    datasets: [
+                        { label: 'ปริมาณให้น้ำ (ลิตร)', data: [520, 480, 300, 450, 200, 380, 420], backgroundColor: '#4a7c59', borderRadius: 8 },
+                        { label: 'โอกาสเกิดฝน TMD (%)', data: [20, 30, 80, 40, 90, 60, 65], type: 'line', borderColor: '#f59e0b', borderWidth: 3, fill: false, tension: 0.3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: { font: { family: 'Prompt', size: 11 } } } },
+                    scales: { y: { beginAtZero: true, grid: { color: '#f3f4f6' } }, x: { grid: { display: false } } }
+                }
+            });
+        }
+
+        function updateCropChart() {
+            if(cropChart) {
+                cropChart.data = getCropChartData();
+                cropChart.update();
+            }
+        }
+    </script>
+</body>
+</html>
